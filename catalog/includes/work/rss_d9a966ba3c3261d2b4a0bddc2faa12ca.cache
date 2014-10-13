@@ -1,0 +1,24 @@
+a:12:{s:8:"encoding";s:5:"UTF-8";s:5:"title";s:18:"osCommerce Add-Ons";s:4:"link";s:25:"http://www.oscommerce.com";s:11:"description";s:29:"osCommerce, Sell With Emotion";s:8:"language";s:2:"en";s:9:"copyright";s:29:"Copyright (c) 2014 osCommerce";s:14:"managingEditor";s:19:"hpdl@oscommerce.com";s:11:"image_title";s:10:"osCommerce";s:9:"image_url";s:53:"http://www.oscommerce.com/images/oscommerce_88x31.gif";s:10:"image_link";s:25:"http://www.oscommerce.com";s:5:"items";a:5:{i:0;a:4:{s:5:"title";s:21:"Canned Order Comments";s:4:"link";s:38:"http://addons.oscommerce.com/info/6633";s:11:"description";s:28:"update readme.txt to English";s:7:"pubDate";s:31:"Mon, 13 Oct 2014 04:53:48 +0200";}i:1;a:4:{s:5:"title";s:39:"Cancelllation Form for 2.3.4 and BS2334";s:4:"link";s:38:"http://addons.oscommerce.com/info/9136";s:11:"description";s:274:"Only some small changes in widerruf_form.php to simplify printing the form<br />
+<br />
+Full package<br />
+<br />
+=====================================<br />
+Kleinere Anpassungen in der widerruf_form.php, um den Druck des Formulars zu vereinfachen.<br />
+<br />
+Full Package";s:7:"pubDate";s:31:"Sun, 12 Oct 2014 13:20:48 +0200";}i:2;a:4:{s:5:"title";s:35:"Hide Categories with category cache";s:4:"link";s:38:"http://addons.oscommerce.com/info/8921";s:11:"description";s:272:"Fixed some PHP errors that I found in the two functions files and corrected the location for the cache write statement in instruction 21 so that it is after the for loop that updates the product quantities instead of inside it.<br />
+<br />
+Complete installation enclosed.";s:7:"pubDate";s:31:"Sat, 11 Oct 2014 01:45:01 +0200";}i:3;a:4:{s:5:"title";s:12:"USPS Methods";s:4:"link";s:37:"http://addons.oscommerce.com/info/487";s:11:"description";s:647:"Fix for USPS Version 7.3.1 running Paypal Express<br />
+Issue: Express.php module hangs (returns blank white page in browser) while getting transit time (getDmstcTransitTimes) quote in USPS module. Around line 1375 or so, below<br />
+<br />
+	if (!class_exists('httpClient')) {<br />
+		include(DIR_WS_CLASSES . 'http_client.php');<br />
+	}<br />
+<br />
+<br />
+add:<br />
+<br />
+	if (!class_exists('httpClient')) {<br />
+ 	include(DIR_FS_CATALOG . DIR_WS_CLASSES . 'http_client.php');<br />
+	}<br />
+<br />
+It MAY be ok to actually replace the &quot;if then&quot; check instead of adding - but not sure if the path is correct in other circumstances.";s:7:"pubDate";s:31:"Sat, 11 Oct 2014 01:09:20 +0200";}i:4;a:4:{s:5:"title";s:21:"PSiGate XML Interface";s:4:"link";s:38:"http://addons.oscommerce.com/info/3346";s:11:"description";s:118:"PSigate returns the error StoreID and passphrase incorrect if the SSL version is incorrect. Patch this file for a fix.";s:7:"pubDate";s:31:"Thu, 09 Oct 2014 22:34:55 +0200";}}s:11:"items_count";i:5;}
