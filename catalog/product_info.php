@@ -56,7 +56,12 @@
     } else {
       $products_name = $product_info['products_name'];
     }
-    $product_info = $OSCOM_Hooks->callArgs('product_info', 'recurringProductInfo', array($HTTP_GET_VARS['products_id'] , $product_info));
+	$product_desc = "";
+    $product_desc_map = $OSCOM_Hooks->callArgs('product_info', 'view_product_info', array($HTTP_GET_VARS['products_id'] , $product_info));
+    foreach($product_desc_map as $hook=>$product_description){
+      $product_desc .= $product_description;    
+    }
+	$product_info['products_description'] .= $product_desc;
 ?>
 
 <?php echo tep_draw_form('cart_quantity', tep_href_link(FILENAME_PRODUCT_INFO, tep_get_all_get_params(array('action')) . 'action=add_product')); ?>

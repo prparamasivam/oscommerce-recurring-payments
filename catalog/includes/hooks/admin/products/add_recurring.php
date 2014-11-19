@@ -11,9 +11,9 @@
   Released under the GNU General Public License
 */
 
-  class hook_admin_catalog_recurring_product {  
+  class hook_admin_products_add_recurring {  
   
-    function listen_recurringproduct_script() {
+    function listen_product_script() {
 	
 	$var = "
 	 <style>
@@ -133,7 +133,9 @@ function updateProductNet() {
 	
 	
 	$(document).ready(function() {
-	$( '#RP_start_date' ).datepicker();
+	$( '#RP_start_date' ).datepicker({
+			dateFormat: 'yy-mm-dd'
+		});
 	$( '#rpTrialPeriod' ).click(function() {	
 		 $('#trialPaymentTable').toggle(this.checked);
 	});
@@ -149,7 +151,7 @@ function updateProductNet() {
 return $var;
 }
 
-function listen_recurringproduct_content(){
+    function listen_get_product_info(){
 			$var = "
 			<tr>
 			<td colspan=\"2\">". tep_draw_separator('pixel_trans.gif', '1', '10')."</td>
@@ -255,7 +257,7 @@ function listen_recurringproduct_content(){
 					 <td class=\"main\">Amount &nbsp;". tep_draw_input_field('rpIntAmt', $pInfo->init_amt, '')."</td>
 					</tr><tr>
 					 <td  class=\"main\" colspan=\"2\" title=\"Create a profile if your one-time transaction fails. One-time transaction failures cancel both the one-time transaction and the profile you were trying to create. Select this option to automatically create a new profile and add the one-time transaction amount to the outstanding balance.\">
-					 &nbsp;<input type='checkbox' id='onetime_tx_fails' />Create a profile if your one time transaction fails</td>
+					 &nbsp;<input type='checkbox' id='rpCreateProfileTransactionFailure' name='rpCreateProfileTransactionFailure'/>Create a profile if your one time transaction fails</td>
 					 
 				</tr>				
 		  </table>
@@ -267,128 +269,123 @@ function listen_recurringproduct_content(){
 			";     
 	return $var;
     }
-function listen_recurringproduct_insert_update($array){
-		$products_type = $array[0];
-		$sql_array = $array[1];
-		$insert_sql_data = array('products_type' => tep_db_prepare_input($products_type));
-        $sql_data_array = array_merge($sql_array, $insert_sql_data);
-		return $sql_data_array;
-}
-
-function listen_recurringproduct_categories($array){
-if (!is_object($logger)) $logger = new logger;
-	$action = $array[0];
-	$rp_array = $array[1];
-	$sql_data_array = $array[2];
-	$products_id = $array[3];
-	$logger->write($array[0],"action");
-	$logger->write(print_r($rp_array,1),'rparray');
-	$logger->write(print_r($sql_data_array,1),'sql_data_array');
-	$logger->write($array[3],"productid");
-	if($rp_array['product_type'] == 'recurring') {
-    // rp insert for rp profile data
+	
+    function listen_save_product_info($newproduct){
+	$action = $newproduct[0];
+	$http_array = $newproduct[1];
+	$sql_data_array = $newproduct[2];
+	$products_id = $newproduct[3];
+	
+	
+	if($http_array['products_type'] == 'recurring') {
+	
+	$insert_sql_data = array('products_type' => tep_db_prepare_input($http_array['products_type']));
+	tep_db_perform(TABLE_PRODUCTS, $insert_sql_data, 'update', "products_id = '" . (int)$products_id . "'");
+	
+	// rp insert for rp profile data
     $trial = false;
-    if(isset($rp_array['rpTrialPeriod']) && $rp_array['rpTrialPeriod'] == 'on'){
+    if(isset($http_array['rpTrialPeriod']) && $http_array['rpTrialPeriod'] == 'on'){
       $trial = true;
     }
-    if($rp_array['rpBillingPeriod'] == 'semimonth') {
+    if($http_array['rpBillingPeriod'] == 'semimonth') {
     $freqN = '1';
     }
-    else if($rp_array['rpBillingPeriod'] == 'year' && ($rp_array['rpBillingFrequency'] <= 0 || $rp_array['rpBillingFrequency'] > 1)) {
+    else if($http_array['rpBillingPeriod'] == 'year' && ($http_array['rpBillingFrequency'] <= 0 || $http_array['rpBillingFrequency'] > 1)) {
       $freqN = '1';
     }
     else {
-      $freqN = $rp_array['rpBillingFrequency'];
+      $freqN = $http_array['rpBillingFrequency'];
     }
-    if($rp_array['rpNumberPaymentsOption'] == 'noenddate') {
+    if($http_array['rpNumberPaymentsOption'] == 'noenddate') {
       $nop = 0;
     }
     else {
-    $nop = $rp_array['rpNumberPayments'];
+    $nop = $http_array['rpNumberPayments'];
     }
 	
-    $sql_data_array = array('profile_start_date'          => $rp_array['RP_start_date'],
-                              'billing_period'             => $rp_array['rpBillingPeriod'],
-                              'billing_frequency'          => $freqN,
-                              'total_billing_cycles'        => $nop
-    );
-      
+	
+	$rp_data_array = array();
+    $insert_sql_data = array('profile_start_date'          => tep_db_prepare_input(date_format(new DateTime($http_array['RP_start_date']), 'Y-m-d H:i:s')),
+                              'billing_period'             => tep_db_prepare_input($http_array['rpBillingPeriod']),
+                              'billing_frequency'          => tep_db_prepare_input($freqN),
+                              'total_billing_cycles'        => tep_db_prepare_input($nop));
+     $rp_data_array = array_merge($rp_data_array, $insert_sql_data);
+	
     if($trial){
-      if($rp_array['rpTrialBillingPeriod'] == 'semimonth') {
+	
+      if($http_array['rpTrialBillingPeriod'] == 'semimonth') {
         $freq = '1';
       }
-      else if($rp_array['rpTrialBillingPeriod'] == 'year' && ($rp_array['rpTrialBillingFrequency'] <= 0 || $rp_array['rpTrialBillingFrequency'] > 1)) {
+      else if($http_array['rpTrialBillingPeriod'] == 'year' && ($http_array['rpTrialBillingFrequency'] <= 0 || $http_array['rpTrialBillingFrequency'] > 1)) {
         $freq = '1';
       }
       else {
-        $freq = $rp_array['rpTrialBillingFrequency'];
+        $freq = $http_array['rpTrialBillingFrequency'];
       }  
-	$sql_data_array['trial_profile_start_date'] = $rp_array['RP_start_date'];
-	$sql_data_array['trial_billing_period'] = $rp_array['rpTrialBillingPeriod'];
-	$sql_data_array['trial_billing_frequency'] = $freq;
-	$sql_data_array['trial_total_billing_cycles'] = $rp_array['rpTrialNumberPayments'];
-	$sql_data_array['trial_amt'] = $rp_array['rpTrialPrice'];
+	  
+	$insert_sql_data = array('trial_profile_start_date' => tep_db_prepare_input(date_format(new DateTime($http_array['RP_start_date']), 'Y-m-d H:i:s')),
+							'trial_billing_period' => tep_db_prepare_input($http_array['rpTrialBillingPeriod']),
+							'trial_billing_frequency' => tep_db_prepare_input($freq),
+							'trial_total_billing_cycles' => tep_db_prepare_input($http_array['rpTrialNumberPayments']),
+							'trial_amt' => tep_db_prepare_input($http_array['rpTrialPrice']));
+							
+	$rp_data_array = array_merge($rp_data_array, $insert_sql_data);
       }
       else {
-        $sql_data_array['trial_total_billing_cycles'] = 1;
-        $sql_data_array['trial_profile_start_date'] = null;
-        $sql_data_array['trial_billing_period'] = null;
-        $sql_data_array['trial_amt'] = '0.00'; 
+	  $insert_sql_data = array('trial_profile_start_date' => null,
+							'trial_billing_period' => null,
+							'trial_total_billing_cycles' => 1,
+							'trial_amt' => '0.00');
+	$rp_data_array = array_merge($rp_data_array, $insert_sql_data);
+    
       }
       // check rpOneTimeTransaction
-      if(isset($rp_array['rpOneTimeTransaction'])){
-        if($rp_array['rpOneTimeTransaction'] == '1'){
-        $sql_data_array['init_amt']  = $rp_array['rpIntAmt'];
-        }
+	 
+      if(isset($http_array['rpIntAmt'])){
+       
+		$insert_sql_data = array('init_amt' => $http_array['rpIntAmt']);
+		$rp_data_array = array_merge($rp_data_array, $insert_sql_data);  
       }
       else {
-        $sql_data_array['init_amt'] = 0;
+       
+	    $insert_sql_data = array('init_amt' => 0);
+		$rp_data_array = array_merge($rp_data_array, $insert_sql_data);
       }
-      if(isset($rp_array['rpCreateProfileTransactionFailure'])){
-        if($rp_array['rpCreateProfileTransactionFailure'] == '1'){
-          $sql_data_array['failed_init_amt_action']          = 'ContinueOnFailure';
+      if(isset($http_array['rpCreateProfileTransactionFailure'])){
+        if($http_array['rpCreateProfileTransactionFailure'] == 'on'){
+       
+		$insert_sql_data = array('failed_init_amt_action' => 'ContinueOnFailure');
+		$rp_data_array = array_merge($rp_data_array, $insert_sql_data);
         }
       else{
-         $sql_data_array['failed_init_amt_action']          = 'CancelOnFailure';
+      
+		$insert_sql_data = array('failed_init_amt_action' => 'CancelOnFailure');
+		$rp_data_array = array_merge($rp_data_array, $insert_sql_data);
       }
       }
       else{
-         $sql_data_array['failed_init_amt_action']          = 'CancelOnFailure';
+       
+		$insert_sql_data = array('failed_init_amt_action' => 'CancelOnFailure');
+		$rp_data_array = array_merge($rp_data_array, $insert_sql_data);
       }
 	  
       if($action == 'insert_product') {
-        $sql_data_array['products_id'] = $products_id;
-        tep_db_perform(paypal_rp_product_profile, $sql_data_array);
+       
+		$insert_sql_data = array('products_id' => $products_id);
+		$rp_data_array = array_merge($rp_data_array, $insert_sql_data);
+        tep_db_perform(paypal_rp_product_profile, $rp_data_array);
       }
       else if($action == 'update_product') {
-        tep_db_perform(paypal_rp_product_profile, $sql_data_array, 'update', "products_id = '" . (int)$products_id . "'");
+        tep_db_perform(paypal_rp_product_profile, $rp_data_array, 'update', "products_id = '" . (int)$products_id . "'");
       }      
-    }	
-		$logger->write(print_r($sql_data_array,1),'finalsqlarray');
+    }
+	
+	
+	return $sql_data_array;
 }
 
 
-function listen_recurringproduct_copy_to_confirm($array){
-if (!is_object($logger)) $logger = new logger;
-
-	$products_id = $array[0];
-	$dup_products_id = $array[1];
-	$logger->write($products_id,"products_id");
-	$logger->write($dup_products_id,"dup_products_id");
-	$prod_type_query = tep_db_query("select products_type from " . TABLE_PRODUCTS . " where products_id = '" . (int)$products_id . "'");
-	$prod_type = tep_db_fetch_array($prod_type_query);			
-	if($prod_type['products_type'] == 'recurring') {
-	  tep_db_query("update " . TABLE_PRODUCTS . " set products_type = 'recurring' WHERE products_id = '" . (int)$dup_products_id . "'");
-	  $rp_query = tep_db_query("select * from " . paypal_rp_product_profile . " where products_id = '" . (int)$products_id . "'");
-	  $rp_product = tep_db_fetch_array($rp_query);
-	  tep_db_query("insert into " . paypal_rp_product_profile . " (products_id, profile_start_date, billing_period, billing_frequency, total_billing_cycles, trial_profile_start_date, trial_billing_period, trial_billing_frequency, trial_total_billing_cycles, trial_amt, init_amt, failed_init_amt_action) values ('" . (int)$dup_products_id . "', '" . tep_db_input($rp_product['profile_start_date']) . "', '" . tep_db_input($rp_product['billing_period']) . "', '" . tep_db_input($rp_product['billing_frequency']) . "', '" . tep_db_input($rp_product['total_billing_cycles']) . "', '" . tep_db_input($rp_product['trial_profile_start_date']) . "', '" . tep_db_input($rp_product['trial_billing_period']) . "', '" . tep_db_input($rp_product['trial_billing_frequency']) . "', '" . tep_db_input($rp_product['trial_total_billing_cycles']) . "', '" . tep_db_input($rp_product['trial_amt']) . "', '" . tep_db_input($rp_product['init_amt']) . "', '" . tep_db_input($rp_product['failed_init_amt_action']) . "')");
-	}
-}
-
-function listen_recurringproduct_params($parameters){
-if (!is_object($logger)) $logger = new logger;
-
-	$logger->write(print_r($parameters,1),'parameter_array');
+    function listen_init_product_parameters(){
 	$rp_params = array('products_type'              => '',
                        'profile_start_date'           => '',
                        'billing_period'              => '',
@@ -401,19 +398,7 @@ if (!is_object($logger)) $logger = new logger;
                        'trial_amt'                   => '',
                        'init_amt'                    => '',
                        'failed_init_amt_action'        => '');					   
-    $parameters = array_merge($parameters, $rp_params);
-	$logger->write(print_r($parameters,1),'parameter_array_final');
-	return $parameters;
+   return $rp_params;
 }
-
-function listen_recurringproduct_add_data($product){
-	if($product['products_type'] == 'recurring'){
-        $rp_rs = tep_db_query('SELECT * FROM ' . paypal_rp_product_profile . ' WHERE products_id = ' . $product['products_id']);
-        if($row = tep_db_fetch_array($rp_rs)){
-          $product = array_merge($product, $row);
-        }
-      }
-	return $product;	  
-}	
 }
 ?>

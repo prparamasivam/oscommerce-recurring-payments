@@ -56,19 +56,26 @@
       foreach ( $this->_hooks[$this->_site][$group][$action] as $hook ) {
         $result .= call_user_func(array($GLOBALS['hook_' . $this->_site . '_' . $group . '_' . $hook], 'listen_' . $action));
       }
-
       if ( !empty($result) ) {
         return $result;
       }
     }
 	
 	function callArgs($group, $action, $args) {
-          foreach ( $this->_hooks[$this->_site][$group][$action] as $hook ) {
-        $result = call_user_func(array($GLOBALS['hook_' . $this->_site . '_' . $group . '_' . $hook], 'listen_' . $action), $args);
-      }
-      if ( !empty($result) ) {
-        return $result;
-      }
+	$resultmap = array();
+       foreach ( $this->_hooks[$this->_site][$group][$action] as $hook ) {
+			$result = call_user_func(array($GLOBALS['hook_' . $this->_site . '_' . $group . '_' . $hook], 'listen_' . $action), $args);
+			$resultmap[$hook] = $result;
+      }      
+	  return $resultmap;
+    }
+	function callWithoutArgs($group, $action) {
+	$resultmap = array();
+       foreach ( $this->_hooks[$this->_site][$group][$action] as $hook ) {
+			$result = call_user_func(array($GLOBALS['hook_' . $this->_site . '_' . $group . '_' . $hook], 'listen_' . $action));
+			$resultmap[$hook] = $result;
+      }      
+	  return $resultmap;
     }
   }
 ?>

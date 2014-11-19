@@ -12,7 +12,7 @@
 
   require('includes/application_top.php');
   
-  $OSCOM_Hooks->register('catalog');
+  $OSCOM_Hooks->register('products');
    
   require(DIR_WS_CLASSES . 'currencies.php');
   $currencies = new currencies();
@@ -223,11 +223,6 @@
                                 'products_tax_class_id' => tep_db_prepare_input($HTTP_POST_VARS['products_tax_class_id']),
                                 'manufacturers_id' => (int)tep_db_prepare_input($HTTP_POST_VARS['manufacturers_id']));
 		
-		$sql_data_array = $OSCOM_Hooks->callArgs('catalog','recurringproduct_insert_update', array($HTTP_POST_VARS['products_type'],$sql_data_array));
-		if (!is_object($logger)) $logger = new logger;
-		
-		//$logger->write(print_r($sql_data_array, 1),'afterhooks1');
-		
 		$products_image = new upload('products_image');
         $products_image->set_destination(DIR_FS_CATALOG_IMAGES);
         if ($products_image->parse() && $products_image->save()) {
@@ -239,8 +234,10 @@
 
           $sql_data_array = array_merge($sql_data_array, $insert_sql_data);
 
+		  
           tep_db_perform(TABLE_PRODUCTS, $sql_data_array);
-          $products_id = tep_db_insert_id();
+		  
+          $products_id = tep_db_insert_id();	  
 
           tep_db_query("insert into " . TABLE_PRODUCTS_TO_CATEGORIES . " (products_id, categories_id) values ('" . (int)$products_id . "', '" . (int)$current_category_id . "')");
         } elseif ($action == 'update_product') {
@@ -250,8 +247,9 @@
 
           tep_db_perform(TABLE_PRODUCTS, $sql_data_array, 'update', "products_id = '" . (int)$products_id . "'");
         }
-		$OSCOM_Hooks->callArgs('catalog','recurringproduct_categories',array($action,array("product_type"=>$HTTP_POST_VARS['products_type'],"rpTrialPeriod"=>$HTTP_POST_VARS['rpTrialPeriod'],"rpBillingPeriod"=>$HTTP_POST_VARS['rpBillingPeriod'],"rpBillingFrequency"=>$HTTP_POST_VARS['rpBillingFrequency'],"rpNumberPaymentsOption"=>$HTTP_POST_VARS['rpNumberPaymentsOption'],"rpNumberPayments"=>$HTTP_POST_VARS['rpNumberPayments'],"RP_start_date"=>$HTTP_POST_VARS['RP_start_date'],"rpTrialBillingPeriod"=>$HTTP_POST_VARS['rpTrialBillingPeriod'],"rpTrialBillingFrequency"=>$HTTP_POST_VARS['rpTrialBillingFrequency'],"rpTrialNumberPayments"=>$HTTP_POST_VARS['rpTrialNumberPayments'],"rpTrialPrice"=>$HTTP_POST_VARS['rpTrialPrice'],"rpOneTimeTransaction"=>$HTTP_POST_VARS['rpOneTimeTransaction'],"rpIntAmt"=>$HTTP_POST_VARS['rpIntAmt'],"rpCreateProfileTransactionFailure"=>$HTTP_POST_VARS['rpCreateProfileTransactionFailure']),$sql_data_array,$products_id));
-		
+	
+		$OSCOM_Hooks->callArgs('products','save_product_info',array($action, $HTTP_POST_VARS, $sql_data_array, $products_id));
+			
         $languages = tep_get_languages();
         for ($i=0, $n=sizeof($languages); $i<$n; $i++) {
           $language_id = $languages[$i]['id'];
@@ -265,8 +263,7 @@
                                      'language_id' => $language_id);
 
             $sql_data_array = array_merge($sql_data_array, $insert_sql_data);
-
-            tep_db_perform(TABLE_PRODUCTS_DESCRIPTION, $sql_data_array);
+		    tep_db_perform(TABLE_PRODUCTS_DESCRIPTION, $sql_data_array);
           } elseif ($action == 'update_product') {
             tep_db_perform(TABLE_PRODUCTS_DESCRIPTION, $sql_data_array, 'update', "products_id = '" . (int)$products_id . "' and language_id = '" . (int)$language_id . "'");
           }
@@ -368,8 +365,6 @@
             }
 
             tep_db_query("insert into " . TABLE_PRODUCTS_TO_CATEGORIES . " (products_id, categories_id) values ('" . (int)$dup_products_id . "', '" . (int)$categories_id . "')");
-			$OSCOM_Hooks->callArgs('catalog','recurringproduct_copy_to_confirm',array($products_id,$dup_products_id));
-            
 			$products_id = $dup_products_id;
           }
 
@@ -411,8 +406,11 @@
                        'products_status' => '',
                        'products_tax_class_id' => '',
                        'manufacturers_id' => '');
-	$parameters = $OSCOM_Hooks->callArgs('catalog','recurringproduct_params', $parameters);	
 	
+	$productparameters = $OSCOM_Hooks->callWithoutArgs('products','init_product_parameters');	
+	foreach($productparameters as $hook=>$result){
+		$parameters = array_merge($parameters, $result);    
+	}
     $pInfo = new objectInfo($parameters);
 
     if (isset($HTTP_GET_VARS['pID']) && empty($HTTP_POST_VARS)) {
@@ -420,8 +418,6 @@
       $product = tep_db_fetch_array($product_query);
 
       
-	  $product = $OSCOM_Hooks->callArgs('catalog','recurringproduct_add_data', $product);  
-	  
 	  $pInfo->objectInfo($product);
 
       $product_images_query = tep_db_query("select id, image, htmlcontent, sort_order from " . TABLE_PRODUCTS_IMAGES . " where products_id = '" . (int)$product['products_id'] . "' order by sort_order");
@@ -508,7 +504,7 @@ function updateNet() {
 //--></script>
 
 <?php
-echo $OSCOM_Hooks->call('catalog','recurringproduct_script');
+echo $OSCOM_Hooks->call('products','product_script');
 ?>
     <?php echo tep_draw_form('new_product', FILENAME_CATEGORIES, 'cPath=' . $cPath . (isset($HTTP_GET_VARS['pID']) ? '&pID=' . $HTTP_GET_VARS['pID'] : '') . '&action=' . $form_action, 'post', 'enctype="multipart/form-data"'); ?>
     <table border="0" width="100%" cellspacing="0" cellpadding="2">
@@ -555,7 +551,7 @@ echo $OSCOM_Hooks->call('catalog','recurringproduct_script');
           </tr>
 <?php
     }
-	echo $OSCOM_Hooks->call('catalog','recurringproduct_content');
+	echo $OSCOM_Hooks->call('products','get_product_info');
 	
 ?>
 
