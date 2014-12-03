@@ -407,7 +407,7 @@
                        'products_tax_class_id' => '',
                        'manufacturers_id' => '');
 	
-	$productparameters = $OSCOM_Hooks->callWithoutArgs('products','init_product_parameters');	
+	$productparameters = $OSCOM_Hooks->callArgs('products','init_product_parameters');	
 	foreach($productparameters as $hook=>$result){
 		$parameters = array_merge($parameters, $result);    
 	}

@@ -61,21 +61,15 @@
       }
     }
 	
-	function callArgs($group, $action, $args) {
-	$resultmap = array();
-       foreach ( $this->_hooks[$this->_site][$group][$action] as $hook ) {
+	function callArgs($group, $action, $args = NULL) {
+		$resultmap = array();
+		foreach ( $this->_hooks[$this->_site][$group][$action] as $hook ) {
+		if($args != NULL)
 			$result = call_user_func(array($GLOBALS['hook_' . $this->_site . '_' . $group . '_' . $hook], 'listen_' . $action), $args);
-			$resultmap[$hook] = $result;
-      }      
-	  return $resultmap;
-    }
-	function callWithoutArgs($group, $action) {
-	$resultmap = array();
-       foreach ( $this->_hooks[$this->_site][$group][$action] as $hook ) {
+		else 
 			$result = call_user_func(array($GLOBALS['hook_' . $this->_site . '_' . $group . '_' . $hook], 'listen_' . $action));
-			$resultmap[$hook] = $result;
-      }      
-	  return $resultmap;
-    }
+		$resultmap[$hook] = $result;
+		} 
+		return $resultmap;
   }
-?>
+}
